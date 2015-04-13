@@ -17,11 +17,6 @@ import engine.ThreeShapes;
 import engine.Timer;
 import engine.Utils;
 
-//TODO: Bugs: Triangles seem to have opposite lighting from other shapes; Loss of control sometimes when changing views; Clear plane clears too early after first clear;
-
-//TODO: Better Colors, Game Over, Clear plane, Score, GUI Score, GUI Time, Menus, Key Acceleration in Utils
-//TODO?: Drawing Text to OpenGL, Scoreboard
-
 public class Game extends Stage
 {
 	private Camera cam;
@@ -37,6 +32,8 @@ public class Game extends Stage
 	private boolean paused;
 	private static Timer time;
 	private static long speed;
+	private long pausedTime = 0;
+	private long deltaTime = 0;
 	// Variable used to toggle testing conditions
 	private boolean dev;
 	// Variable for which location the camera is at
@@ -72,13 +69,25 @@ public class Game extends Stage
 	{
 		pollInput();
 
-		if (time.isTicked(speed) && !paused)
+		// TODO: Bugs: Triangles seem to have opposite lighting from other
+		// shapes;
+		// TODO: Loss of control sometimes when changing views;
+		// TODO: Clear plane clears too early after first clear;
+
+		// TODO: Better Colors, Game Over, Clear plane, Score, GUI Score, GUI
+		// Time, Menus, Key Acceleration in Utils
+		// TODO?: Drawing Text to OpenGL, Scoreboard
+
+		if (!paused)
 		{
-			tick();
-			for (int i = 0; i < height; i++)
+			if (time.isTicked(speed))
 			{
-				if (checkPlane(i))
-					clearPlane(i);
+				tick();
+				for (int i = 0; i < height; i++)
+				{
+					if (checkPlane(i))
+						clearPlane(i);
+				}
 			}
 		}
 	}
@@ -94,23 +103,21 @@ public class Game extends Stage
 	{
 		if (Keyboard.isKeyDown(Keyboard.KEY_ESCAPE))
 			Main.kill();
-
-		if (Utils.isKeyPressed(Keyboard.KEY_F3))
-		{
-			System.out.println("X: " + cam.getX() + " Y: " + cam.getY()
-					+ " Z: " + cam.getZ());
-			System.out.println("RX: " + cam.getRotX() + " RY: " + cam.getRotY()
-					+ " RZ: " + cam.getRotZ());
-		}
 		if (Utils.isKeyPressed(Keyboard.KEY_F5))
 		{
 			dev = !dev;
-			System.out.println("Dev: " + dev);
 		}
 		if (Utils.isKeyPressed(Keyboard.KEY_SPACE))
 		{
 			paused = !paused;
-			System.out.println("Paused: " + paused);
+			if(paused)
+			{
+				pausedTime = time.getTime();
+			}
+			else
+			{
+				deltaTime = time.getTime() - pausedTime;
+			}
 		}
 		if (Utils.isKeyPressed(Keyboard.KEY_E))
 		{
@@ -129,12 +136,6 @@ public class Game extends Stage
 		} else
 		{
 			devControls();
-		}
-		
-		//TODO: Testing block
-		if(Utils.isKeyPressed(Keyboard.KEY_F9))
-		{
-			Main.changeStage(Main.TESTING);
 		}
 	}
 
@@ -210,7 +211,7 @@ public class Game extends Stage
 	}
 
 	// Polls user input in regular mode
-private void gameControls()
+	private void gameControls()
 	{
 		if (Utils.isKeyPressed(Keyboard.KEY_W))
 			moveByView(0, -1);
@@ -326,7 +327,7 @@ private void gameControls()
 		active = new Tetromino();
 		active.setPosByBlock(width / 2, height - 1, length / 2,
 				active.getMostBlock(0, 1, 0));
-		if(checkLoss())
+		if (checkLoss())
 		{
 			active = null;
 			System.out.println("You Lose!");
@@ -402,13 +403,13 @@ private void gameControls()
 		{
 			ThreeShapes.fillRect(elem.getX(),
 					getTopBlock(elem.getX(), elem.getZ()).getY() + 1,
-					elem.getZ(), 1, 1, 90, 0, 0, new Color(0,0,0));
+					elem.getZ(), 1, 1, 90, 0, 0, new Color(0, 0, 0));
 		}
 	}
 
 	// Adds all the blocks in the active tetromino to the grid
 	// locks active tetromino to grid and adds its block to the grid
-private void lock()
+	private void lock()
 	{
 		for (Block elem : active.getBlocks())
 			grid.add(elem);
@@ -428,9 +429,9 @@ private void lock()
 
 		// System.out.println("\tFrom Check Plane: \n\t\t Y: " + y);
 
-		if(y == 0)
+		if (y == 0)
 			System.out.println("Found " + volume + " blocks on plane y= " + y);
-		
+
 		if (volume == (width * length))
 			return true;
 		return false;
@@ -449,15 +450,20 @@ private void lock()
 		}
 	}
 
-	//Draws time to right of arena
+	// Draws time to right of arena
 	private void drawTime(int view)
 	{
-		int milliseconds = (int) (time.getTime()) % 1000;
-		int seconds = (int) (time.getTime() / 1000) % 60;
-		int minutes = (int) ((time.getTime() / (1000*60)) % 60);
+		long t;
+		if(paused)
+			t = pausedTime;
+		else
+			t = (time.getTime() - deltaTime);
+		int milliseconds = (int) (t) % 1000;
+		int seconds = (int) (t / 1000) % 60;
+		int minutes = (int) ((t / (1000 * 60)) % 60);
 		String timeString = minutes + ":" + seconds + ":" + milliseconds;
-		
-		switch(view)
+
+		switch (view)
 		{
 		case 0:
 			ThreeShapes.drawDigitalNum(width, 0, 0, timeString, -45, 0, 0);
@@ -469,11 +475,12 @@ private void lock()
 			ThreeShapes.drawDigitalNum(0, 0, length, timeString, -45, 180, 0);
 			break;
 		case 3:
-			ThreeShapes.drawDigitalNum(width, 0, length, timeString, -45, -90, 0);
+			ThreeShapes.drawDigitalNum(width, 0, length, timeString, -45, -90,
+					0);
 			break;
 		}
 	}
-	
+
 	// Render game window
 	public void render()
 	{
@@ -481,6 +488,7 @@ private void lock()
 		cam.useView();
 		drawArena();
 		drawShadow();
+
 		drawTime(view % 4);
 
 		active.render();
@@ -501,15 +509,15 @@ private void lock()
 		ThreeShapes.drawWirePrism(0, 0, 0, width, height, length);
 	}
 
-	//Returns true is the player has lost
-	//	the player has lost when a tetromino cannot drop
+	// Returns true is the player has lost
+	// the player has lost when a tetromino cannot drop
 	private boolean checkLoss()
 	{
-		if(!checkCollision(0,0,0))
+		if (!checkCollision(0, 0, 0))
 			return true;
 		return false;
 	}
-	
+
 	// Cleans up extraneous variables
 	public void cleanUp()
 	{
