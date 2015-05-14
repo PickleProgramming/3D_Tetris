@@ -69,15 +69,6 @@ public class Game extends Stage
 	{
 		pollInput();
 
-		// TODO: Bugs: Triangles seem to have opposite lighting from other
-		// shapes;
-		// TODO: Loss of control sometimes when changing views;
-		// TODO: Clear plane clears too early after first clear;
-
-		// TODO: Better Colors, Game Over, Clear plane, Score, GUI Score, GUI
-		// Time, Menus, Key Acceleration in Utils
-		// TODO?: Drawing Text to OpenGL, Scoreboard
-
 		if (!paused)
 		{
 			if (time.isTicked(speed))
@@ -110,11 +101,10 @@ public class Game extends Stage
 		if (Utils.isKeyPressed(Keyboard.KEY_SPACE))
 		{
 			paused = !paused;
-			if(paused)
+			if (paused)
 			{
 				pausedTime = time.getTime();
-			}
-			else
+			} else
 			{
 				deltaTime = time.getTime() - pausedTime;
 			}
@@ -129,6 +119,10 @@ public class Game extends Stage
 			view--;
 			cam.switchView(Math.abs(view) % 4);
 			System.out.println("View: " + Math.abs(view) % 4);
+		}
+		if (Utils.isKeyPressed((Keyboard.KEY_F4)))
+		{
+			makePlane();
 		}
 		if (!dev)
 		{
@@ -441,20 +435,44 @@ public class Game extends Stage
 	// clears the parameter designated plane
 	private void clearPlane(float y)
 	{
-		for (int i = 0; i < grid.size(); i++)
+		int i = 0;
+		while (checkPlanePopulation(y))
 		{
 			if (grid.get(i).getY() == y)
 				grid.remove(i);
-			if (grid.get(i).getY() > y)
-				grid.get(i).setY(grid.get(i).getY() - 1);
+			else
+				i++;
+			
+			System.out.println(i);
 		}
+		
+		for(Block elem : grid)
+			elem.setY(elem.getY() - 1);
+		
+	}
+
+	//returns true if there are blocks present on a plane
+	// and false otherwise
+	private boolean checkPlanePopulation(float y)
+	{
+		int i = 0;
+		
+		for(Block elem : grid)
+		{
+			if(elem.getY() == y)
+				i++;
+		}
+		
+		if(i > 0)
+			return true;
+		return false;
 	}
 
 	// Draws time to right of arena
 	private void drawTime(int view)
 	{
 		long t;
-		if(paused)
+		if (paused)
 			t = pausedTime;
 		else
 			t = (time.getTime() - deltaTime);
@@ -516,6 +534,17 @@ public class Game extends Stage
 		if (!checkCollision(0, 0, 0))
 			return true;
 		return false;
+	}
+
+	public void makePlane()
+	{
+		for (int i = 0; i < 10; i++)
+		{
+			for (int j = 0; j < 9; j++)
+			{
+				grid.add(new Block(i, 0, j));
+			}
+		}
 	}
 
 	// Cleans up extraneous variables

@@ -29,6 +29,17 @@ public class Block
 		this.col = col;
 	}
 
+	public Block(float x, float y, float z)
+	{
+		this.x = x;
+		this.y = y;
+		this.z = z;
+		this.col = new Color(0,0,0);
+		this.xRel = 0;
+		this.yRel = 0;
+		this.zRel = 0;
+	}
+	
 	public void update(float x, float y, float z)
 	{
 		this.x = x + xRel;
